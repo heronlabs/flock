@@ -26,3 +26,13 @@ RUN ARCH="$(dpkg --print-architecture)" \
     && ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${NODE_ARCH}/bin/node /usr/local/bin/node \
     && ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${NODE_ARCH}/bin/npm /usr/local/bin/npm \
     && ln -sf /usr/local/lib/nodejs/node-v${NODE_VERSION}-linux-${NODE_ARCH}/bin/npx /usr/local/bin/npx
+
+# Start the runner through run.sh instead of the base image's
+# `./bin/Runner.Listener run`. When GitHub asks the runner to self-update, the
+# listener exits (code 3) and a detached script swaps bin/ and externals/ for
+# the new version. Run directly, that exit ends the container, `restart:
+# always` relaunches it mid-swap and the runner is left without
+# bin/Runner.Listener, crash-looping with exit 127. run.sh waits for the update
+# to finish and relaunches the listener in place. `--startuptype service` keeps
+# the update script from starting a second run.sh of its own.
+CMD ["./run.sh", "--startuptype", "service"]

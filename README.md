@@ -494,7 +494,7 @@ The reservation applies to every replica and one GPU can't be safely split betwe
 
 ```bash
 make lint     # shellcheck on scripts/ and test/
-make test     # bats tests for scripts/sizing.sh
+make test     # bats tests for scripts/sizing.sh and runner.Dockerfile
 make config   # validate docker-compose.yml against .env.example
 ```
 

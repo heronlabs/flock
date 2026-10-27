@@ -15,7 +15,10 @@ RUN ARCH="$(dpkg --print-architecture)" \
         arm64) NODE_ARCH=arm64; NODE_SHA256="${NODE_SHA256_ARM64}" ;; \
         *) echo "unsupported architecture: ${ARCH} (supported: amd64, arm64)" >&2; exit 1 ;; \
     esac \
-    && curl -fsSLo /tmp/node.tar.xz "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
+    && curl -fsSLo /tmp/node.tar.xz \
+        --connect-timeout 30 --speed-limit 1024 --speed-time 30 --max-time 300 \
+        --retry 5 --retry-delay 5 --retry-connrefused \
+        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" \
     && echo "${NODE_SHA256}  /tmp/node.tar.xz" | sha256sum -c - \
     && mkdir -p /usr/local/lib/nodejs \
     && tar -xJf /tmp/node.tar.xz -C /usr/local/lib/nodejs \

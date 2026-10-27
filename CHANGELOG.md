@@ -1,3 +1,9 @@
+## v1.3.2 (2026-10-27)
+
+### Bug Fixes
+
+* fix: start the runner through run.sh so self-updates finish in place (3a23a72ba0f23d58ca925300321d11f3d821a39a)
+
 ## v1.3.1 (2026-10-27)
 
 ### Bug Fixes

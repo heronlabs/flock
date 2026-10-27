@@ -7,7 +7,7 @@ The human guide is `README.md` — don't duplicate it here. Sections: Security, 
 ## Layout
 
 - `docker-compose.yml` — the `runner` service; org, capacity and labels come from `.env` (`ORG_NAME`, `RUNNERS`, `RUNNER_CPUS`, `RUNNER_MEMORY`, `RUNNER_LABELS`).
-- `runner.Dockerfile` — base image + Node 22 tarball per architecture (`NODE_SHA256_X64` / `NODE_SHA256_ARM64`).
+- `runner.Dockerfile` — base image + Node 22 tarball per architecture (`NODE_SHA256_X64` / `NODE_SHA256_ARM64`); `test/runner-dockerfile.bats` guards its download flags.
 - `scripts/sizing.sh` — computes the pool capacity from the CPUs and memory Docker can use; `test/sizing.bats` covers it.
 - `.claude/skills/start`, `.claude/skills/stop` — `/start <org>` and `/stop`, workstations only.
 - `version.txt`, `CHANGELOG.md` — managed by the Continuous Deployment workflow.

@@ -72,7 +72,7 @@ for c in $(docker compose ps -q); do docker logs "$c" 2>&1 | grep -E 'Runner suc
 
 Then open `https://github.com/organizations/<ORG_NAME>/settings/actions/runners`. You should see `RUNNERS` runners named `<ORG_NAME>-runner-<random>`, Idle, labelled `self-hosted`, `Linux`, `X64` or `ARM64`, `docker` and `test`.
 
-With Claude Code on a workstation, `/start <org>` does all of this in one go (and `/stop` brings the pool down) — see [Switching orgs](#switching-orgs). Pick the [host profile](#host-profiles) that matches the machine for its tuning and power settings.
+With Claude Code on a workstation, `/start <org>` does all of this in one go once `.env` holds your `ACCESS_TOKEN` — without a `.env` it copies `.env.example` and stops so you can fill the token in — and `/stop` brings the pool down; see [Switching orgs](#switching-orgs). Pick the [host profile](#host-profiles) that matches the machine for its tuning and power settings.
 
 ---
 

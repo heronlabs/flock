@@ -14,11 +14,23 @@ Runs on any workstation: Linux, macOS, or Windows (Claude Code in Git Bash). Nev
 
 The whole pool (`RUNNERS` replicas, set in `.env`) registers to ONE org at a time. Switching orgs deregisters the runners from the current org and registers them on the new one; jobs queued in the old org wait until you switch back.
 
-Execute these steps in order. Validate the requested org (Step 1's first check) before Step 0, so an invalid name stops the skill before anything is torn down.
+Execute these steps in order. Validate the requested org (Step 1's first check) before the `.env` check and Step 0, so an invalid name stops the skill before anything is torn down.
+
+## Before Step 0 — Check `.env`
+
+`docker-compose.yml` requires `ORG_NAME`, so `docker compose` refuses to parse it while `.env` is missing or has no `ORG_NAME`. Check which case applies:
+
+```
+if [ ! -f .env ]; then echo missing; elif grep -Eq '^ORG_NAME=.+' .env; then echo org-set; else echo no-org; fi
+```
+
+- `missing` — run `cp .env.example .env`, tell the user to fill in `ACCESS_TOKEN` in `.env` (the runners can't register without it) and then run `/start <org>` again, and stop. Never print the `ACCESS_TOKEN` line.
+- `no-org` — this checkout's config could not have registered anything, so skip Step 0's `docker compose down` but still run its leftover-container check, then continue to Step 1, which writes the org.
+- `org-set` — continue with Step 0.
 
 ## Step 0 — Clean slate (BEFORE changing the org)
 
-Stop all running containers and remove images and volumes while `.env` still points at the org they are registered to. This also deregisters the runners from the org they were on (the entrypoint runs `config.sh remove` on SIGTERM):
+Stop all running containers and remove images and volumes while `.env` still points at the org they are registered to (skip this `down` when the `.env` check printed `no-org`). This also deregisters the runners from the org they were on (the entrypoint runs `config.sh remove` on SIGTERM):
 
 ```
 docker compose down -v --rmi all --remove-orphans

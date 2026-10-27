@@ -16,8 +16,10 @@ Execute these steps in order:
 ## Step 1 — Stop all containers
 
 ```
-docker compose down
+if [ -f .env ] && grep -Eq '^ORG_NAME=.+' .env; then docker compose down; else ORG_NAME=unset docker compose down; fi
 ```
+
+Without `.env` or its `ORG_NAME`, compose refuses to parse `docker-compose.yml` (`ORG_NAME` is required), so the fallback passes a throwaway value to `down` only: a shell value overrides `.env` for that one command, and running containers keep the env they were created with. Never use this override for `up`.
 
 ## Step 2 — Cancel the hourly health check
 
@@ -33,6 +35,8 @@ pool back within the hour until its session ends.
 ```
 docker compose ps
 ```
+
+If Step 1 took the fallback, run `ORG_NAME=unset docker compose ps` instead — `ps` needs the file to parse too.
 
 Report that the pool is stopped (no runner listed) and that the machine is
 still on. Run `/start <org>` to bring the pool back.

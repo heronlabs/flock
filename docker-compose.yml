@@ -1,0 +1,90 @@
+# flock — self-hosted GitHub Actions runners (tests-only workload)
+#
+# The whole pool registers to ONE GitHub org at a time, chosen by ORG_NAME in
+# .env. On a workstation, switch with `/start <org>` (or `docker compose
+# down -v`, edit ORG_NAME, `docker compose up -d`) — the runners deregister
+# from the old org on shutdown. A dedicated server is pinned to one org and
+# never switches.
+#
+# One `runner` service scaled to N identical replicas. Machine capacity comes
+# from .env, so the same file runs on any Linux host, Docker Desktop (Windows
+# WSL2 or macOS) and a small server, amd64 or arm64:
+#   RUNNERS        number of runner replicas         (default 1)
+#   RUNNER_CPUS    CPU limit per replica, in CPUs    (default 1)
+#   RUNNER_MEMORY  memory limit per replica          (default 2G)
+# The defaults only keep the stack runnable anywhere. Size the pool for this
+# machine with `scripts/sizing.sh --write`, which computes the three values
+# from the CPUs and memory Docker can use (see "Sizing" in README.md).
+# RUNNER_CPUS must not exceed that CPU count or Docker refuses to start the
+# container.
+#
+# No thread pinning: each replica is only capped by a CPU limit, so it runs
+# on any host topology. Runner names are ${ORG_NAME}-runner-<random suffix>
+# (myoung34 RUNNER_NAME_PREFIX + RANDOM_RUNNER_SUFFIX); container names are
+# compose-generated (flock-runner-N — `name: flock` pins the project, so they
+# don't depend on the checkout folder).
+# The runner adds its own self-hosted, OS and architecture labels (Linux, and
+# X64 or ARM64), so target with runs-on: [self-hosted, linux, x64] on amd64
+# hosts or [self-hosted, linux, arm64] on arm64 hosts. RUNNER_LABELS in .env
+# replaces the extra labels below.
+#
+# Built from runner.Dockerfile on top of myoung34/github-runner:latest, which
+# replaces the base image's Ubuntu 20.04 `nodejs` apt package (v10.19.0) with
+# an official Node 22 LTS install under /usr/local, so `node` on PATH matches
+# what actions like pnpm/action-setup expect.
+
+name: flock
+
+services:
+  runner:
+    image: flock:node22
+    build:
+      context: .
+      dockerfile: runner.Dockerfile
+    restart: always
+    privileged: true
+    oom_score_adj: 500
+    shm_size: 1g
+    tmpfs:
+      - /tmp/runner-tmp:rw,nosuid,nodev,size=512m
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc:
+        soft: 32768
+        hard: 32768
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    environment:
+      ACCESS_TOKEN: ${ACCESS_TOKEN}
+      RUNNER_SCOPE: org
+      ORG_NAME: ${ORG_NAME:?set ORG_NAME in .env to your GitHub org}
+      # RUNNER_NAME must stay unset — it overrides the prefix. The entrypoint
+      # appends a random 13-char suffix per replica (RANDOM_RUNNER_SUFFIX
+      # defaults to true).
+      RUNNER_NAME_PREFIX: ${ORG_NAME}-runner
+      RUNNER_WORKDIR: /tmp/github-runner
+      LABELS: ${RUNNER_LABELS:-self-hosted,linux,docker,test}
+      START_DOCKER_SERVICE: "true"
+      DOCKERD_OPTS: "--storage-driver=overlay2 --max-concurrent-downloads=10"
+    # Anonymous volumes, one set per replica. Reused across restarts and
+    # `up -d` recreates; `down` leaves them dangling (a later `up` starts
+    # with empty caches), `down -v` deletes them.
+    volumes:
+      - /tmp/github-runner
+      - /var/lib/docker
+      - /opt/hostedtoolcache
+    deploy:
+      replicas: ${RUNNERS:-1}
+      resources:
+        limits:
+          cpus: "${RUNNER_CPUS:-1}"
+          memory: ${RUNNER_MEMORY:-2G}
+        # Memory floor only. No CPU reservation, so nothing can exceed the
+        # CPU limit on a 1-vCPU host.
+        reservations:
+          memory: 1G

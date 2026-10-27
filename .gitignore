@@ -1,0 +1,22 @@
+# OSX
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+
+# Supera
+.worktrees/
+.supera/
+.serena/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+runner-work-*/
+*lock

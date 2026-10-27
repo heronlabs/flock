@@ -1,3 +1,9 @@
+## v1.3.1 (2026-10-27)
+
+### Bug Fixes
+
+* fix: let /start and /stop handle a missing .env or ORG_NAME (a5a0ce9ce6ff0931d01084931813b33910d0bf33)
+
 ## v1.3.0 (2026-10-27)
 
 ### Features

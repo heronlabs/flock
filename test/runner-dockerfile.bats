@@ -1,6 +1,7 @@
 #!/usr/bin/env bats
 
-# runner-dockerfile.bats — Tests for the Node tarball download in runner.Dockerfile
+# runner-dockerfile.bats — Tests for runner.Dockerfile: the Node tarball download
+# and the runner start command.
 #
 # The base image (myoung34/github-runner, Ubuntu 20.04) ships curl 7.68, so the
 # download must bound a stalled transfer and retry with options that curl has.
@@ -44,5 +45,10 @@ node_curl() {
 
 @test "Node download is still checked against its SHA-256" {
   run grep -c 'sha256sum -c -' "$DOCKERFILE"
+  [ "$output" -eq 1 ]
+}
+
+@test "Runner starts through run.sh so self-updates finish in place" {
+  run grep -cx 'CMD \["./run.sh", "--startuptype", "service"\]' "$DOCKERFILE"
   [ "$output" -eq 1 ]
 }
